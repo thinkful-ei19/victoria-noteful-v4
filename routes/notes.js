@@ -1,17 +1,48 @@
 'use strict';
 
 const express = require('express');
-const router = express.Router();
-
 const mongoose = require('mongoose');
+const passport = require('passport');
 
 const Note = require('../models/note');
+const Folder = require('../models/folder');
+const Tag = require('../models/tag');
+
+function validateFolderId(userId, folderId) {
+  if (!folderId) {
+    return Promise.resolve();
+  }
+  return Folder.findOne({ _id: folderId, userId })
+    .then(result => {
+      if (!result) {
+        return Promise.reject('InvalidFolder');
+      }
+    });
+}
+
+function validateTagIds(userId, tags = []) {
+  if (!tags.length) {
+    return Promise.resolve();
+  }
+  return Tag.find({ $and: [{ _id: { $in: tags }, userId }] })
+    .then(results => {
+      if (tags.length !== results.length) {
+        return Promise.reject('InvalidTag');
+      }
+    });
+}
+
+const router = express.Router();
+
+// Protect endpoints using JWT Strategy
+router.use('/notes', passport.authenticate('jwt', { session: false, failWithError: true }));
 
 /* ========== GET/READ ALL ITEMS ========== */
 router.get('/notes', (req, res, next) => {
   const { searchTerm, folderId, tagId } = req.query;
+  const userId = req.user.id;
 
-  let filter = {};
+  let filter = { userId };
 
   /**
    * BONUS CHALLENGE - Search both title and content using $OR Operator
@@ -45,6 +76,7 @@ router.get('/notes', (req, res, next) => {
 /* ========== GET/READ A SINGLE ITEM ========== */
 router.get('/notes/:id', (req, res, next) => {
   const { id } = req.params;
+  const userId = req.user.id;
 
   if (!mongoose.Types.ObjectId.isValid(id)) {
     const err = new Error('The `id` is not valid');
@@ -52,7 +84,7 @@ router.get('/notes/:id', (req, res, next) => {
     return next(err);
   }
 
-  Note.findById(id)
+  Note.findOne({ _id: id, userId })
     .populate('tags')
     .then(result => {
       if (result) {
@@ -69,6 +101,8 @@ router.get('/notes/:id', (req, res, next) => {
 /* ========== POST/CREATE AN ITEM ========== */
 router.post('/notes', (req, res, next) => {
   const { title, content, folderId, tags } = req.body;
+  const userId = req.user.id;
+  const newNote = { title, content, tags, userId };
 
   /***** Never trust users - validate input *****/
   if (!title) {
@@ -77,23 +111,27 @@ router.post('/notes', (req, res, next) => {
     return next(err);
   }
 
-  if (tags) {
-    tags.forEach((tag) => {
-      if (!mongoose.Types.ObjectId.isValid(tag)) {
-        const err = new Error('The `id` is not valid');
-        err.status = 400;
-        return next(err);
-      }
-    });
+  if (mongoose.Types.ObjectId.isValid(folderId)) {
+    newNote.folderId = folderId;
   }
 
-  const newItem = { title, content, folderId, tags };
+  const valFolderIdProm = validateFolderId(userId, folderId);
+  const valTagIdsProm = validateTagIds(userId, tags);
 
-  Note.create(newItem)
+  Promise.all([valFolderIdProm, valTagIdsProm])
+    .then(() => Note.create(newNote))
     .then(result => {
       res.location(`${req.originalUrl}/${result.id}`).status(201).json(result);
     })
     .catch(err => {
+      if (err === 'InvalidFolder') {
+        err = new Error('The folder is not valid');
+        err.status = 400;
+      }
+      if (err === 'InvalidTag') {
+        err = new Error('The tag is not valid');
+        err.status = 400;
+      }
       next(err);
     });
 });
@@ -102,6 +140,8 @@ router.post('/notes', (req, res, next) => {
 router.put('/notes/:id', (req, res, next) => {
   const { id } = req.params;
   const { title, content, folderId, tags } = req.body;
+  const userId = req.user.id;
+  const updateNote = { title, content, tags, userId };
 
   /***** Never trust users - validate input *****/
   if (!title) {
@@ -117,25 +157,16 @@ router.put('/notes/:id', (req, res, next) => {
   }
 
   if (mongoose.Types.ObjectId.isValid(folderId)) {
-    updateItem.folderId = folderId;
+    updateNote.folderId = folderId;
   }
 
-  if (tags) {
-    tags.forEach((tag) => {
-      if (!mongoose.Types.ObjectId.isValid(tag)) {
-        const err = new Error('The `id` is not valid');
-        err.status = 400;
-        return next(err);
-      }
-    });
-  }
+  const valFolderIdProm = validateFolderId(userId, folderId);
+  const valTagIdsProm = validateTagIds(userId, tags);
 
-
-  const updateItem = { title, content, tags };
-  const options = { new: true };
-
-  Note.findByIdAndUpdate(id, updateItem, options)
-    .populate('tags')
+  Promise.all([valFolderIdProm, valTagIdsProm])
+    .then(() => {
+      return Note.findByIdAndUpdate(id, updateNote, { new: true }).populate('tags');
+    })
     .then(result => {
       if (result) {
         res.json(result);
@@ -144,6 +175,14 @@ router.put('/notes/:id', (req, res, next) => {
       }
     })
     .catch(err => {
+      if (err === 'InvalidFolder') {
+        err = new Error('The folder is not valid');
+        err.status = 400;
+      }
+      if (err === 'InvalidTag') {
+        err = new Error('The tag is not valid');
+        err.status = 400;
+      }
       next(err);
     });
 });
@@ -151,9 +190,13 @@ router.put('/notes/:id', (req, res, next) => {
 /* ========== DELETE/REMOVE A SINGLE ITEM ========== */
 router.delete('/notes/:id', (req, res, next) => {
   const { id } = req.params;
+  const userId = req.user.id;
 
-  Note.findByIdAndRemove(id)
-    .then(() => {
+  Note.findOneAndRemove({ _id: id, userId })
+    .then(result => {
+      if (!result) {
+        next();
+      }
       res.status(204).end();
     })
     .catch(err => {

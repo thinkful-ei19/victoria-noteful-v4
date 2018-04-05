@@ -10,6 +10,7 @@ const localStrategy = new LocalStrategy((username, password, done) => {
   User.findOne({ username })
     .then(results => {
       user = results;
+      console.log(user, '#######################################')
       if (!user) {
         return Promise.reject({
           reason: 'LoginError',
@@ -20,6 +21,7 @@ const localStrategy = new LocalStrategy((username, password, done) => {
       return user.validatePassword(password);
     })
     .then(isValid => {
+      console.log(isValid, '!!!!!!!!!!!!!!!!')
       if (!isValid) {
         return Promise.reject({
           reason: 'LoginError',
