@@ -70,21 +70,20 @@ router.post('/users', (req, res, next)=> {
 
   if (tooLargeField) {
     const max = sizedFields[tooLargeField].max;
-    const err = new Error(`Field: '${tooSmallField}' must be at most ${max} characters long`);
+    const err = new Error(`Field: '${tooLargeField}' must be at most ${max} characters long`);
     err.status = 422;
     return next(err);
   }
 
   // Username and password were validated as pre-trimmed
-  let { username, password, fullname = '' } = req.body;
-  fullname = fullname.trim();
+  let { username, password, fullname } = req.body;
 
   return User.hashPassword(password)
     .then(digest => {
       const newUser = {
         username,
         password: digest,
-        fullname
+        fullname: fullname.trim()
       };
       return User.create(newUser);
     })
@@ -98,11 +97,11 @@ router.post('/users', (req, res, next)=> {
       }
       next(err);
     });
-    
+
   /***** Never trust users - validate input *****/
 //   if (!username){
 //     const err = new Error('Not Validate `username`');
-//     err.sta 
+//     err.sta
 //   }
 
 });
