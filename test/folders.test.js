@@ -17,7 +17,7 @@ const expect = chai.expect;
 
 chai.use(chaiHttp);
 
-describe.only('Noteful API - Folders', function () {
+describe('Noteful API - Folders', function () {
   let user;
   let token;
 
@@ -38,7 +38,8 @@ describe.only('Noteful API - Folders', function () {
   });
 
   afterEach(function () {
-    return mongoose.connection.db.dropDatabase();
+    return mongoose.connection.db.dropDatabase()
+      .catch(err => console.error(err));
   });
 
   after(function () {
@@ -176,7 +177,7 @@ describe.only('Noteful API - Folders', function () {
 
     it('should return an error when given a duplicate name', function () {
 
-      return Folder.findOne({ userId: user.id })
+      return Folder.findOne({ userId: user.id }).limit(2)
         .then(data => {
           const newItem = { 'name': data.name, 'userId': user.id };
           return chai.request(app)
@@ -274,7 +275,7 @@ describe.only('Noteful API - Folders', function () {
 
     it('should return an error when given a duplicate name', function () {
 
-      return Folder.find().select('id name').limit(2)
+      return Folder.find({ userId: user.id }).limit(2)
         .then(results => {
           const [item1, item2] = results;
           item1.name = item2.name;
