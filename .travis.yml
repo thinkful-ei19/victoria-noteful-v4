@@ -1,10 +1,10 @@
 language: node_js
 node_js: node
 services: mongodb
-# deploy:
-#     provider: heroku
-#     api_key:
-#       secure: [YOUR-API-KEY]
-#     app: [YOUR-APP-NAME]
-#     on:
-#       repo: [YOUR-APP-REPO]
+deploy:
+  provider: heroku
+  api_key:
+    secure: c5FZ1uBLn3J4PvAlpc/7p6I9pinMD5AfoWnfGb8WXj8xrRYRbmmFAvxi6e63Ishp5isFJms9VT8yUn2e5Azxn5xl4QhxDKGCwr1YPsG2ANRU8rK0fFG759pd7D3BzqqWz8zfBwlcHmcaXsuBKIOlUBrz0E+HIQ4wY30fAs3SZOHi/bY+iGZJs3MRQhdzwUvkD7TOgzV1R+D9aV5/sVXs1gcOYh86FrvTHADcnVbvC7wJKjL6EYrCi1Z2E4UHv3h35AuHcogFrYE5zeiXGsu0HEQLidcZZLwRZV7tiw6X7O+16Eyapj7+Xh9yMkn07gcsR3Fkk0QE97TdaFzgKcq9MLjt46fW58kxFg+L4ugad+sLSUbOqvOeIqwqYcIAiZJJYqP0GBUfU//MfSSMCIOkeDTYVJwTtMjZzMYNl3eZ+DrzCUzQr9Ox6Y7sgO1zLbZNtWjy/9lOBHEBCgT0jkgZg45766/jgnkOAncKV5XJ28l9g5YvgK0SM4tuON42zirNXLlHi4Nv6WIR1sbzU1HWIPiZ52/Vk5RCWkjKF8S1fH5wv+zYUMgPQjfZN8iYGNVkbytrEN8sqgmHXxUAM+rkrpu0/TS+8zPaxOYxJSzQCukB1/mtvoA1SCrrx5q9Lxng/TVyGFcTFDNQzd6HFy5VCW8PgqYquuuEzBM/s18RHdw=
+  app: victoria-noteful-v4
+  on:
+    repo: thinkful-ei19/victoria-noteful-v4
