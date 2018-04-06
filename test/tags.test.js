@@ -40,7 +40,7 @@ describe('Noteful API - Tags', function () {
 
   afterEach(function () {
     return mongoose.connection.db.dropDatabase()
-      .catch(err => console.error(err));
+     .catch(err => console.error(err));
   });
 
   after(function () {
